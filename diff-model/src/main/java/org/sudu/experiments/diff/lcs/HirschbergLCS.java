@@ -18,8 +18,16 @@ public class HirschbergLCS extends LCS {
 
   @Override
   public int[][] findCommon() {
+    int minLen = Math.min(L.length, R.length);
+    int lSt = 0, rSt = 0;
     List<int[]> result = new ArrayList<>(minLen / 2);
-    findCommon(0, lLen, 0, rLen, result);
+    for (int i = 0; i < leftSync.length; i++) {
+      int lEnd = leftSync[i];
+      int rEnd = rightSync[i];
+      findCommon(lSt, lEnd, rSt, rEnd, result);
+      lSt = lEnd;
+      rSt = rEnd;
+    }
     return Utils.toIntIntArray(result);
   }
 

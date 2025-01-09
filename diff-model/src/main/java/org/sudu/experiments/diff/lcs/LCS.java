@@ -3,6 +3,7 @@ package org.sudu.experiments.diff.lcs;
 import org.sudu.experiments.diff.ranges.BaseRange;
 import org.sudu.experiments.diff.ranges.CommonRange;
 import org.sudu.experiments.diff.ranges.Diff;
+import org.sudu.experiments.math.ArrayOp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,15 +11,22 @@ import java.util.List;
 public abstract class LCS {
 
   protected final int[][] L, R;
-  protected final int lLen, rLen;
-  protected int minLen;
+  protected final int[] leftSync, rightSync;
 
   public LCS(int[][] L, int[][] R) {
+    this(L, R, new int[]{}, new int[]{});
+  }
+
+  public LCS(int[][] L, int[][] R, int[] leftSync, int[] rightSync) {
     this.L = L;
     this.R = R;
-    this.lLen = this.L.length;
-    this.rLen = this.R.length;
-    this.minLen = Math.min(lLen, rLen);
+    leftSync = ArrayOp.add(leftSync, L.length);
+    rightSync = ArrayOp.add(rightSync, R.length);
+
+    if (leftSync.length != rightSync.length)
+      throw new IllegalArgumentException("Left and right sync points arrays must have the same length");
+    this.leftSync = leftSync;
+    this.rightSync = rightSync;
   }
 
   // return values & indices of L sequence

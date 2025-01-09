@@ -12,6 +12,8 @@ public class DPLCS extends LCS {
 
   @Override
    public int[][] findCommon() {
+    int lLen = L.length;
+    int rLen = R.length;
     short[][] matrix = countLCSMatrix();
     int i = lLen, j = rLen;
     int ptr = matrix[i][j];
@@ -31,6 +33,8 @@ public class DPLCS extends LCS {
   }
 
   public short[][] countLCSMatrix() {
+    int lLen = L.length;
+    int rLen = R.length;
     short[][] matrix = new short[lLen + 1][rLen + 1];
     for (int i = 1; i < lLen + 1; i++) {
       for (int j = 1; j < rLen + 1; j++) {

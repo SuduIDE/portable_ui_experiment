@@ -13,7 +13,7 @@ public class MyersLCS extends LCS {
 
   public MyersLCS(int[][] L, int[][] R) {
     super(L, R);
-    this.common = new BitSet(lLen);
+    this.common = new BitSet(L.length);
     this.bitsetLen = 0;
 
     int totalLen = L.length + R.length;
@@ -23,12 +23,21 @@ public class MyersLCS extends LCS {
 
   @Override
   public int[][] findCommon() {
-    int threshold = 20000 + 10 * (int) Math.sqrt(lLen + rLen);
-    lcs(0, lLen, 0, rLen, Math.min(threshold, lLen + rLen));
+    int lSt = 0, rSt = 0;
+    for (int i = 0; i < leftSync.length; i++) {
+      int lEnd = leftSync[i];
+      int rEnd = rightSync[i];
+      int lLen = lEnd - lSt;
+      int rLen = rEnd - rSt;
+      int threshold = 20000 + 10 * (int) Math.sqrt(lLen + rLen);
+      lcs(0, lLen, 0, rLen, Math.min(threshold, lLen + rLen));
+      lSt = lEnd;
+      rSt = rEnd;
+    }
 
     int[][] res = new int[bitsetLen][2];
     int ptr = 0;
-    for (int i = 0; i < lLen; i++) {
+    for (int i = 0; i < L.length; i++) {
       if (common.get(i)) res[ptr++] = L[i];
     }
     if (ptr == bitsetLen) return res;
@@ -57,8 +66,11 @@ public class MyersLCS extends LCS {
       for (int k = L; k <= R; k += 2) {
         int x = k == L || k != R && VForward[k - 1] < VForward[k + 1] ? VForward[k + 1] : VForward[k - 1] + 1;
         int y = x - k + lenR;
-        x += commonLenForward(fromL + x, fromR + y,
-            Math.min(toL - fromL - x, toR - fromR - y));
+        x += commonLenForward(
+            fromL + x, fromR + y,
+            lenL, lenR,
+            Math.min(toL - fromL - x, toR - fromR - y)
+        );
         VForward[k] = x;
       }
       if ((lenL - lenR) % 2 != 0) {
@@ -105,7 +117,11 @@ public class MyersLCS extends LCS {
       int x = fromL;
       int y = fromR;
       while (x < toL && y < toR) {
-        int commonLen = commonLenForward(x, y, Math.min(toL - x, toR - y));
+        int commonLen = commonLenForward(
+            x, y,
+            lenL, lenR,
+            Math.min(toL - x, toR - y)
+        );
         if (commonLen > 0) {
           markCommon(x, commonLen);
           x += commonLen;
@@ -116,7 +132,11 @@ public class MyersLCS extends LCS {
     }
   }
 
-  private int commonLenForward(int lInd, int rInd, int maxLen) {
+  private int commonLenForward(
+      int lInd, int rInd,
+      int lLen, int rLen,
+      int maxLen
+  ) {
     int x = lInd;
     int y = rInd;
 

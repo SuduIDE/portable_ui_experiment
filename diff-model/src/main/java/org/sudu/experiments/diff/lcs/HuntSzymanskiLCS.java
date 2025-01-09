@@ -21,6 +21,9 @@ public class HuntSzymanskiLCS extends LCS {
   @Override
   public int[][] findCommon() {
     List<Integer>[] rMatchList = getMatchList();
+    int lLen = L.length;
+    int rLen = R.length;
+    int minLen = Math.min(lLen, rLen);
     int start = 0;
     int end = 0;
     int[] thresh = new int[minLen - start - end + 1];
@@ -64,7 +67,7 @@ public class HuntSzymanskiLCS extends LCS {
     int start = 0;
     int end = 0;
     List<Integer>[] rMatchList = new List[maxElem];
-    for (int i = start; i < rLen - end; i++) {
+    for (int i = start; i < R.length - end; i++) {
       int val = valR(i);
       if (rMatchList[val] == null) rMatchList[val] = new ArrayList<>();
       rMatchList[val].add(i);

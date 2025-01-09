@@ -52,6 +52,12 @@ public interface ArrayOp {
     return r;
   }
 
+  static int[] add(int[] array, int element) {
+    int[] r = Arrays.copyOf(array, array.length + 1);
+    r[array.length] = element;
+    return r;
+  }
+
   static <T> T[] remove(T[] array, T element) {
     if (array == null) return null;
     if (array.length == 1 && array[0] == element) return null;
