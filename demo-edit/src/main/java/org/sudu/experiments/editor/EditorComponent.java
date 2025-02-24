@@ -102,7 +102,6 @@ public class EditorComponent extends View implements
   TriConsumer<EditorComponent, Integer, Integer> iterativeParseFileListener;
   TriConsumer<EditorComponent, Diff, Boolean> updateModelOnDiffListener;
   Consumer<EditorComponent> onDiffMadeListener;
-  Runnable onSyncPointToggled;
   int vScrollPos = 0;
 
   final ClrContext lrContext;
@@ -111,7 +110,7 @@ public class EditorComponent extends View implements
   GL.Texture codeMap;
   final V2i codeMapSize = new V2i();
 
-  final SortedSet<Integer> syncPointsSet = new TreeSet<>();
+  EditorSyncPoints syncPoints;
 
   public EditorComponent(EditorUi ui) {
     this.context = ui.windowManager.uiContext;
@@ -171,10 +170,6 @@ public class EditorComponent extends View implements
 
   public void setOnDiffMadeListener(Consumer<EditorComponent> listener) {
     onDiffMadeListener = listener;
-  }
-
-  public void setOnSyncPointToggled(Runnable listener) {
-    onSyncPointToggled = listener;
   }
 
   private void internalLayout() {
@@ -584,7 +579,6 @@ public class EditorComponent extends View implements
     g.disableScissor();
 
     drawLineNumbers(firstLine, lastLine);
-    drawSyncPoints(firstLine, syncPointsSet);
     if (mergeButtons != null) {
       mergeButtons.setScrollPos(vScrollPos);
       mergeButtons.draw(
@@ -657,9 +651,16 @@ public class EditorComponent extends View implements
     lineNumbers.draw(textHeight, vScrollPos, firstLine, lastLine, caretLine, g, colors);
   }
 
-  private void drawSyncPoints(int firstLine, Set<Integer> syncPoints) {
+  public void drawSyncPoints() {
+    int firstLine = getFirstLine();
     int lastLine = Math.min((vScrollPos + editorHeight() - 1) / lineHeight, model.document.length());
-    lineNumbers.drawSyncPoints(vScrollPos, firstLine, lastLine, syncPoints, g, colors);
+    lineNumbers.drawSyncPoints(
+        vScrollPos,
+        firstLine, lastLine,
+        syncPoints(),
+        syncPoints.curSyncPoint(),
+        g, colors
+    );
   }
 
   public int getFirstLine() {
@@ -1723,37 +1724,39 @@ public class EditorComponent extends View implements
     model.parseFullFile();
   }
 
-  public int[] syncPoints() {
-    int[] syncPoints = new int[syncPointsSet.size()];
-    int ptr = 0;
-    for (var sp: syncPointsSet) syncPoints[ptr++] = sp;
-    return syncPoints;
-  }
-
   public int computeSyncLine(V2i eventPosition) {
     int localY = eventPosition.y - pos.y;
     return Numbers.clamp(0, (localY + vScrollPos) / lineHeight, model.document.length());
   }
 
+  public int[] syncPoints() {
+    return syncPoints.syncPoints();
+  }
+
+  public int[] copiedSyncPoints() {
+    return syncPoints.copiedSyncPoints();
+  }
+
   public boolean hasSyncPoints() {
-    return !syncPointsSet.isEmpty();
+    return syncPoints.hasSyncPoints();
   }
 
   public boolean hasSyncPoint(V2i eventPos) {
     int lineInd = computeSyncLine(eventPos);
-    return syncPointsSet.contains(lineInd);
+    return syncPoints.hasPoint(lineInd);
+  }
+
+  public boolean canSetPoint(V2i eventPos) {
+    int lineInd = computeSyncLine(eventPos);
+    return syncPoints.canSet(lineInd);
   }
 
   public void toggleSyncPoint(V2i eventPos) {
     int lineInd = computeSyncLine(eventPos);
-    if (syncPointsSet.contains(lineInd)) {
-      syncPointsSet.remove(lineInd);
-    } else {
-      syncPointsSet.add(lineInd);
-    }
-    onSyncPointToggled();
-//    System.out.println("Toggle syncPoint on line " + lineInd);
-//    System.out.println("Sync points: " + Arrays.toString(syncPoints()));
+    if (syncPoints.hasPoint(lineInd))
+      syncPoints.removeSyncPoint(lineInd);
+    else
+      syncPoints.setPoint(lineInd);
   }
 
   public void revealLineInCenter(int lineNumber) {
@@ -1864,8 +1867,8 @@ public class EditorComponent extends View implements
     window().repaint();
   }
 
-  public void onSyncPointToggled() {
-    if (onSyncPointToggled != null) onSyncPointToggled.run();
+  public void setSyncPoints(SyncPoints syncPoints, boolean left) {
+    this.syncPoints = new EditorSyncPoints(syncPoints, left);
   }
 
   @Override
